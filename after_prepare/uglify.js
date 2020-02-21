@@ -9,6 +9,7 @@ var path = require("path");
 var UglifyJS = require("uglify-js");
 var CleanCSS = require("clean-css");
 var ngAnnotate = require("ng-annotate");
+var minify = require("html-minifier-terser").minify;
 
 // Process
 var rootDir = process.argv[2];
@@ -152,6 +153,23 @@ function compress(file) {
 			source = fs.readFileSync(file, "utf8");
 			result = cssMinifier.minify(source);
 			fs.writeFileSync(file, result.styles, "utf8"); // overwrite the original unminified file
+			break;
+
+		case ".html":
+		case ".htm":
+			console.log("minifying html file " + file);
+
+			source = fs.readFileSync(file, "utf8");
+			var result = minify(source, {
+				collapseWhitespace: true,
+				minifyCSS: true,
+				collapseInlineTagWhitespace: true,
+				html5: true,
+				minifyJS: true,
+				removeComments: true,
+				removeEmptyAttributes: true
+			});
+			fs.writeFileSync(file, result, "utf8"); // overwrite the original unminified file
 			break;
 
 		default:

@@ -12,6 +12,7 @@
   ],
   "dependencies": {
     "clean-css": "4.1.9",
+    "html-minifier-terser": "^5.0.4",
     "ng-annotate": "0.15.4",
     "shelljs": "^0.7.0",
     "uglify-js": "3.5.2"
