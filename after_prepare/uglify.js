@@ -3,31 +3,31 @@
 /*jshint latedef:nofunc, node:true*/
 
 // Modules
-var fs = require('fs');
-var path = require('path');
-var dependencyPath = path.join(process.cwd(), 'node_modules');
+var fs = require("fs");
+var path = require("path");
+var dependencyPath = path.join(process.cwd(), "node_modules");
 // cordova-uglify module dependencies
-var UglifyJS = require(path.join(dependencyPath, 'uglify-js'));
-var CleanCSS = require(path.join(dependencyPath, 'clean-css'));
-var ngAnnotate = require(path.join(dependencyPath, 'ng-annotate'));
+var UglifyJS = require(path.join(dependencyPath, "uglify-js"));
+var CleanCSS = require(path.join(dependencyPath, "clean-css"));
+var ngAnnotate = require(path.join(dependencyPath, "ng-annotate"));
 
 // Process
 var rootDir = process.argv[2];
-var platformPath = path.join(rootDir, 'platforms');
-var platforms = process.env.CORDOVA_PLATFORMS.split(',');
+var platformPath = path.join(rootDir, "platforms");
+var platforms = process.env.CORDOVA_PLATFORMS.split(",");
 var cliCommand = process.env.CORDOVA_CMDLINE;
 
 // Hook configuration
-var configFilePath = path.join(rootDir, 'hooks/uglify-config.json');
+var configFilePath = path.join(rootDir, "hooks/uglify-config.json");
 var hookConfig = JSON.parse(fs.readFileSync(configFilePath));
-var isRelease = hookConfig.alwaysRun || (cliCommand.indexOf('--release') > -1);
+var isRelease = hookConfig.alwaysRun || cliCommand.indexOf("--release") > -1;
 var recursiveFolderSearch = hookConfig.recursiveFolderSearch; // set this to false to manually indicate the folders to process
 var foldersToProcess = hookConfig.foldersToProcess; // add other www folders in here if needed (ex. js/controllers)
 var cssMinifier = new CleanCSS(hookConfig.cleanCssOptions);
 
 // Exit
 if (!isRelease) {
-  return;
+	return;
 }
 
 // Run uglifier
@@ -38,31 +38,41 @@ run();
  * @return {undefined}
  */
 function run() {
-  platforms.forEach(function(platform) {
-    var wwwPath;
+	platforms.forEach(function(platform) {
+		var wwwPath;
 
-    switch (platform) {
-      case 'android':
-        wwwPath = path.join(platformPath, platform, 'assets', 'www');
-        if (!fs.existsSync(wwwPath)) {
-          wwwPath = path.join(platformPath, platform, 'app', 'src', 'main', 'assets', 'www');
-        }
-        break;
+		switch (platform) {
+			case "android":
+				wwwPath = path.join(platformPath, platform, "assets", "www");
+				if (!fs.existsSync(wwwPath)) {
+					wwwPath = path.join(
+						platformPath,
+						platform,
+						"app",
+						"src",
+						"main",
+						"assets",
+						"www"
+					);
+				}
+				break;
 
-      case 'ios':
-      case 'browser':
-      case 'wp8':
-      case 'windows':
-        wwwPath = path.join(platformPath, platform, 'www');
-        break;
+			case "ios":
+			case "browser":
+			case "wp8":
+			case "windows":
+				wwwPath = path.join(platformPath, platform, "www");
+				break;
 
-      default:
-        console.log('this hook only supports android, ios, wp8, windows, and browser currently');
-        return;
-    }
+			default:
+				console.log(
+					"this hook only supports android, ios, wp8, windows, and browser currently"
+				);
+				return;
+		}
 
-    processFolders(wwwPath);
-  });
+		processFolders(wwwPath);
+	});
 }
 
 /**
@@ -71,9 +81,9 @@ function run() {
  * @return {undefined}
  */
 function processFolders(wwwPath) {
-  foldersToProcess.forEach(function(folder) {
-    processFiles(path.join(wwwPath, folder));
-  });
+	foldersToProcess.forEach(function(folder) {
+		processFiles(path.join(wwwPath, folder));
+	});
 }
 
 /**
@@ -82,38 +92,37 @@ function processFolders(wwwPath) {
  * @return {undefined}
  */
 function processFiles(dir) {
-	
-  fs.readdir(dir, function(err, list) {
-	if (err) {
-		fs.stat(dir, function(err, stat) {
-			if (!err && stat.isFile()) {
-				compress(dir);
-			} else {
-				console.log('processFiles err: ' + err);
-			}
+	fs.readdir(dir, function(err, list) {
+		if (err) {
+			fs.stat(dir, function(err, stat) {
+				if (!err && stat.isFile()) {
+					compress(dir);
+				} else {
+					console.log("processFiles err: " + err);
+				}
+			});
+
+			return;
+		}
+
+		list.forEach(function(file) {
+			file = path.join(dir, file);
+
+			fs.stat(file, function(err, stat) {
+				if (stat.isFile()) {
+					compress(file);
+
+					return;
+				}
+
+				if (recursiveFolderSearch && stat.isDirectory()) {
+					processFiles(file);
+
+					return;
+				}
+			});
 		});
-
-		return;
-	}
-
-    list.forEach(function(file) {
-      file = path.join(dir, file);
-
-      fs.stat(file, function(err, stat) {
-        if (stat.isFile()) {
-          compress(file);
-
-          return;
-        }
-
-        if (recursiveFolderSearch && stat.isDirectory()) {
-          processFiles(file);
-
-          return;
-        }
-      });
-    });
-  });
+	});
 }
 
 /**
@@ -122,32 +131,32 @@ function processFiles(dir) {
  * @return {undefined}
  */
 function compress(file) {
-  var ext = path.extname(file),
-    res,
-    source,
-    result;
+	var ext = path.extname(file),
+		res,
+		source,
+		result;
 
-  switch (ext) {
-    case '.js':
-      console.log('uglifying js file ' + file);
+	switch (ext) {
+		case ".js":
+			console.log("uglifying js file " + file);
 
-      res = ngAnnotate(String(fs.readFileSync(file, 'utf8')), {
-        add: true
-      });
-      result = UglifyJS.minify(res.src, hookConfig.uglifyJsOptions);
-      fs.writeFileSync(file, result.code, 'utf8'); // overwrite the original unminified file
-      break;
+			res = ngAnnotate(String(fs.readFileSync(file, "utf8")), {
+				add: true
+			});
+			result = UglifyJS.minify(res.src, hookConfig.uglifyJsOptions);
+			fs.writeFileSync(file, result.code, "utf8"); // overwrite the original unminified file
+			break;
 
-    case '.css':
-      console.log('minifying css file ' + file);
+		case ".css":
+			console.log("minifying css file " + file);
 
-      source = fs.readFileSync(file, 'utf8');
-      result = cssMinifier.minify(source);
-      fs.writeFileSync(file, result.styles, 'utf8'); // overwrite the original unminified file
-      break;
+			source = fs.readFileSync(file, "utf8");
+			result = cssMinifier.minify(source);
+			fs.writeFileSync(file, result.styles, "utf8"); // overwrite the original unminified file
+			break;
 
-    default:
-      console.log('encountered a ' + ext + ' file, not compressing it');
-      break;
-  }
+		default:
+			console.log("encountered a " + ext + " file, not compressing it");
+			break;
+	}
 }
